@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Sales Board</title>
+<style>
+:root{--navy:#0B1F44;--blue:#1D4ED8;--cyan:#06B6D4;--green:#16A34A;--ink:#0F172A;--ink2:#475569;--ink3:#94A3B8;--line:#E2E8F0;--bg:#F4F7FB;--card:#fff;--gold:#F2B705;--silver:#A9B4C2;--bronze:#C9793A}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 28px;background:linear-gradient(90deg,var(--navy),var(--blue));color:#fff}
+header h1{margin:0;font-size:30px;letter-spacing:-.01em}
+header .sub{font-size:15px;opacity:.85}
+.tabs{display:flex;gap:6px;background:rgba(255,255,255,.15);padding:4px;border-radius:999px}
+.tabs button{border:0;background:transparent;color:#fff;font:600 15px inherit;font-family:inherit;padding:8px 16px;border-radius:999px;cursor:pointer}
+.tabs button.on{background:#fff;color:var(--navy)}
+main{padding:16px 28px;display:grid;grid-template-columns:1.55fr 1fr;gap:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 20px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+h2{margin:0 0 8px;font-size:19px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}.kpis .card{padding:12px 18px}
+.kpi .l{font-size:14px;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
+.kpi .v{font-size:46px;font-weight:800;line-height:1.1}
+.kpi .c{font-size:13px;color:var(--ink3)}
+.kpi.main{border:2px solid var(--blue)}
+.money{color:var(--green)}
+.rep{display:grid;grid-template-columns:64px 1fr auto;gap:4px 18px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.rep:first-of-type{border-top:0}
+.medal{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:800;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.name{font-size:30px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;background:#E0EAFF;color:#1E3A8A}
+.chip.g{background:#DCFCE7;color:#166534}
+.chip.f{background:#FFEDD5;color:#9A3412}
+.big{text-align:right}
+.big .v{font-size:58px;font-weight:800;line-height:1}
+.big .s{font-size:14px;color:var(--ink3)}
+.periods{grid-column:2/4;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}
+.p{background:var(--bg);border-radius:12px;padding:5px 10px;border:2px solid transparent}
+.p.on{border-color:var(--blue);background:#EEF4FF}
+.p .t{font-size:12px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+.p .c{font-size:22px;font-weight:700}
+.p .r{font-size:15px;font-weight:700;color:var(--green)}
+.goal{grid-column:2/4;margin-top:6px}
+.goal .row{display:flex;justify-content:space-between;font-size:14px;color:var(--ink2);margin-bottom:5px}
+.bar{height:16px;background:#E5EAF2;border-radius:999px;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:999px}
+.bar>i.hit{background:linear-gradient(90deg,#22C55E,var(--green))}
+.side{display:flex;flex-direction:column;gap:16px}
+.mix .m{display:grid;grid-template-columns:90px 1fr 48px;gap:10px;align-items:center;margin:6px 0;font-size:16px}
+.mix .m b{text-align:right;font-size:22px}
+.mix .bar{height:20px}
+.carriers{margin:12px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-size:16px}
+.carriers li{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:3px 0}
+.feed{list-style:none;margin:0;padding:0}
+.feed li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:17px}
+.feed li:first-child{border-top:0}
+.feed .w{font-weight:700}
+.feed .t{color:var(--ink3);font-size:14px;white-space:nowrap}
+.badges{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.badge{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.badge .e{font-size:22px;line-height:1}
+.badge b{display:block;font-size:16px}
+.badge span{color:var(--ink2)}
+footer{padding:0 28px 10px;color:var(--ink3);font-size:13px}
+.stale{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;margin-left:8px}
+@media (min-width:1700px){header h1{font-size:38px}.name{font-size:36px}.big .v{font-size:72px}.kpi .v{font-size:56px}}
+@media (max-width:1000px){main{grid-template-columns:1fr;padding:14px}header{flex-wrap:wrap;padding:16px}header h1{font-size:24px}.tabs{width:100%;justify-content:space-between}.tabs button{padding:8px 10px;flex:1}
+ .kpi .v{font-size:22px}.kpi .c{display:none}.kpis{gap:8px}.kpis .card{padding:10px 12px}.kpi .l{font-size:11px}.badges{grid-template-columns:1fr}.rep{grid-template-columns:48px 1fr;gap:12px}.medal{width:44px;height:44px;font-size:20px}.name{font-size:24px}.big{grid-column:1/3;text-align:left}.big .v{font-size:42px}.periods,.goal{grid-column:1/3}.periods{grid-template-columns:repeat(2,1fr)}.carriers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Sales Leaderboard</h1><div class="sub" id="sub">Loading…</div></div>
+  <div class="tabs" id="tabs"></div>
+</header>
+<main>
+  <section>
+    <div class="kpis" id="kpis"></div>
+    <div class="card"><h2 id="lbh">Leaderboard</h2><div id="lb"></div></div>
+  </section>
+  <aside class="side">
+    <div class="card mix"><h2 id="mixh">Product mix</h2><div id="mix"></div><ul class="carriers" id="car"></ul></div>
+    <div class="card"><h2>Recent wins</h2><ul class="feed" id="feed"></ul></div>
+    <div class="card"><h2>Streaks &amp; badges</h2><div class="badges" id="badges"></div></div>
+  </aside>
+</main>
+<footer id="foot"></footer>
+<script>
+const PER=["today","week","october","aep"], LAB={today:"Today",week:"This week",october:"October",aep:"AEP (since Oct 15)"}, SHORT={today:"Today",week:"Week",october:"Oct",aep:"AEP"};
+const MEDAL=["var(--gold)","var(--silver)","var(--bronze)"];
+const EMO={"Goal crusher":"🎯","On a streak":"🔥"};
+let D=null, period="week", manual=false;
+const $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>"$"+Math.round(n||0).toLocaleString("en-US");
+function when(ts){const [d,t]=ts.split(" ");const [y,m,dd]=d.split("-").map(Number);let [h,mi]=t.split(":").map(Number);const ap=h>=12?"PM":"AM";h=h%12||12;
+ return new Date(y,m-1,dd).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · "+h+":"+String(mi).padStart(2,"0")+" "+ap+" ET";}
+function tabs(){ $("tabs").innerHTML=PER.map(p=>`<button class="${p===period?"on":""}" data-p="${p}">${SHORT[p]}</button>`).join("");
+ $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{manual=true;period=b.dataset.p;render();}); }
+function render(){ if(!D) return; tabs();
+ const T=D.team[period];
+ $("sub").innerHTML="Updated "+esc(D.updated)+(staleH()>3?`<span class="stale">data may be stale</span>`:"");
+ $("kpis").innerHTML=[["Agency gross",money(T.revenue),"money",T.unpriced?T.unpriced+" sale(s) not yet priced":"all sales priced",true],["Clients",T.clients,"","couples count as 2"],["Products",T.products,"","incl. ancillary"]]
+  .map(([l,v,c,cap,m])=>`<div class="card kpi ${m?"main":""}"><div class="l">${l}</div><div class="v num ${c}">${v}</div><div class="c">${esc(cap)} · ${LAB[period]}</div></div>`).join("");
+ $("lbh").textContent="Leaderboard · "+LAB[period];
+ const ranked=[...D.reps].sort((a,b)=>(D.byRep[b][period].clients-D.byRep[a][period].clients)||(D.byRep[b][period].revenue-D.byRep[a][period].revenue));
+ let rank=0,prev=null; $("lb").innerHTML=ranked.map((r,i)=>{const a=D.byRep[r][period];const key=a.clients+"|"+a.revenue;if(key!==prev){rank=i+1;prev=key;}
+  const chips=[...new Set(D.badges.filter(b=>b.reps.includes(r)).map(b=>b.badge.replace(/ \(.*\)/,"")))].map(c=>`<span class="chip ${c==="Goal crusher"?"g":c==="On a streak"?"f":""}">${EMO[c]||"⭐"} ${esc(c)}</span>`).join("");
+  const st=D.streaks[r]; const g=D.goals[r]; const wk=D.byRep[r].week;
+  const goal=g?(()=>{const pct=Math.round(wk.revenue/g*100);return `<div class="goal"><div class="row"><span>Weekly goal ${money(g)}</span><b class="num" style="color:${pct>=100?"var(--green)":"var(--ink)"}">${money(wk.revenue)} · ${pct}%${pct>=100?" ✓":""}</b></div><div class="bar"><i class="${pct>=100?"hit":""}" style="width:${Math.min(100,pct)}%"></i></div></div>`})()
+    :`<div class="goal"><div class="row"><span>Weekly goal: none set</span><b class="num">${money(wk.revenue)} this week</b></div></div>`;
+  return `<div class="rep"><div class="medal" style="background:${rank<=3?MEDAL[rank-1]:"#CBD5E1"}">${rank}</div>
+   <div><div class="name">${esc(r)}</div><div class="chips">${st&&st.current?`<span class="chip f">🔥 ${st.current}-day streak</span>`:""}${chips.replace(/<span class="chip f">🔥 On a streak<\/span>/,"")}</div></div>
+   <div class="big"><div class="v num">${a.clients}</div><div class="s">clients · <b class="money">${money(a.revenue)}</b></div></div>
+   <div class="periods">${PER.map(p=>{const x=D.byRep[r][p];return `<div class="p ${p===period?"on":""}"><div class="t">${SHORT[p]}</div><div class="c num">${x.clients}</div><div class="r num">${money(x.revenue)}</div></div>`}).join("")}</div>${goal}</div>`;}).join("");
+ const mx=T.mix, tot=Math.max(1,...Object.values(mx));
+ $("mixh").textContent="Product mix · "+LAB[period];
+ $("mix").innerHTML=Object.entries(mx).map(([k,v])=>`<div class="m"><span>${esc(k)}</span><div class="bar"><i style="width:${v/tot*100}%"></i></div><b class="num">${v}</b></div>`).join("");
+ $("car").innerHTML=(D.carriers[period]||[]).slice(0,8).map(([c,n],i)=>`<li><span>${i+1}. ${esc(c)}</span><b class="num">${n}</b></li>`).join("")||"<li><span>No sales yet</span></li>";
+ $("feed").innerHTML=D.feed.slice(0,7).map(f=>`<li><span><span class="w">${esc(f.rep)}</span> · ${esc(f.carrier)} ${esc(f.bucket)}${f.sub?" "+esc(f.sub):""}</span><span class="t">${when(f.ts)}</span></li>`).join("")||"<li>No wins yet</li>";
+ $("badges").innerHTML=D.badges.map(b=>`<div class="badge"><span class="e">${EMO[b.badge]||"⭐"}</span><div><b>${esc(b.reps.join(" & "))} · ${esc(b.badge)}</b><span>${esc(b.detail)}</span></div></div>`).join("");
+ $("foot").textContent="Agency gross = estimated first-year commission from posted sales. Last sale posted "+(D.lastSaleTs?when(D.lastSaleTs):"—")+". Refreshes every 5 minutes.";
+}
+function staleH(){const [d,t]=D.asOf.split(" ");const ny=new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"}));return (ny-new Date(d+"T"+t))/36e5;}
+async function load(){ try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"}); if(r.ok){D=await r.json();render();}}catch(e){} }
+load(); setInterval(load,5*60*1000);
+setInterval(()=>{ if(manual) return; period=PER[(PER.indexOf(period)+1)%PER.length]; render(); },20000);
+</script>
+</body>
+</html>
