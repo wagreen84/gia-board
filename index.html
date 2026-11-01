@@ -21,11 +21,12 @@ header .sub{font-size:15px;opacity:.85}
 main{padding:16px 28px;display:grid;grid-template-columns:1.55fr 1fr;gap:22px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 20px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
 h2{margin:0 0 8px;font-size:19px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}.kpis .card{padding:12px 18px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:16px}.kpis .card{padding:12px 18px}
 .kpi .l{font-size:14px;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
 .kpi .v{font-size:46px;font-weight:800;line-height:1.1}
 .kpi .c{font-size:13px;color:var(--ink3)}
 .kpi.main{border:2px solid var(--blue)}
+.kpi .v.xs,.big .xs,.periods .x{color:var(--blue)}.big .xs{font-size:22px;font-weight:800;margin-top:4px}.periods .x{font-size:13px;font-weight:700}
 .money{color:var(--green)}
 .rep{display:grid;grid-template-columns:64px 1fr auto;gap:4px 18px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .rep:first-of-type{border-top:0}
@@ -69,7 +70,7 @@ footer{padding:0 28px 10px;color:var(--ink3);font-size:13px}
 .stale{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;margin-left:8px}
 @media (min-width:1700px){header h1{font-size:38px}.name{font-size:36px}.big .v{font-size:72px}.kpi .v{font-size:56px}}
 @media (max-width:1000px){main{grid-template-columns:1fr;padding:14px}header{flex-wrap:wrap;padding:16px}header h1{font-size:24px}.tabs{width:100%;justify-content:space-between}.tabs button{padding:8px 10px;flex:1}
- .kpi .v{font-size:22px}.kpi .c{display:none}.kpis{gap:8px}.kpis .card{padding:10px 12px}.kpi .l{font-size:11px}.badges{grid-template-columns:1fr}.rep{grid-template-columns:48px 1fr;gap:12px}.medal{width:44px;height:44px;font-size:20px}.name{font-size:24px}.big{grid-column:1/3;text-align:left}.big .v{font-size:42px}.periods,.goal{grid-column:1/3}.periods{grid-template-columns:repeat(2,1fr)}.carriers{grid-template-columns:1fr}}
+ .kpi .v{font-size:22px}.kpi .c{display:none}.kpis{gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}.kpis .card{padding:10px 12px}.kpi .l{font-size:11px}.badges{grid-template-columns:1fr}.rep{grid-template-columns:48px 1fr;gap:12px}.medal{width:44px;height:44px;font-size:20px}.name{font-size:24px}.big{grid-column:1/3;text-align:left}.big .v{font-size:42px}.periods,.goal{grid-column:1/3}.periods{grid-template-columns:repeat(2,1fr)}.carriers{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -100,10 +101,13 @@ function when(ts){const [d,t]=ts.split(" ");const [y,m,dd]=d.split("-").map(Numb
  return new Date(y,m-1,dd).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · "+h+":"+String(mi).padStart(2,"0")+" "+ap+" ET";}
 function tabs(){ $("tabs").innerHTML=PER.map(p=>`<button class="${p===period?"on":""}" data-p="${p}">${SHORT[p]}</button>`).join("");
  $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{manual=true;period=b.dataset.p;render();}); }
+function XS(r,p){const c=D.crossSell;if(!c)return null;return r===null?c.team[p]:(c.byRep[r]?c.byRep[r][p]:null);}
+function xsP(x){return x&&x.pct!==null?x.pct+"%":"—";}
+function xsD(x){return x&&x.clients?x.multi+" of "+x.clients+" clients 2+ products":"no clients yet";}
 function render(){ if(!D) return; tabs();
  const T=D.team[period];
  $("sub").innerHTML="Updated "+esc(D.updated)+(staleH()>3?`<span class="stale">data may be stale</span>`:"");
- $("kpis").innerHTML=[["Agency gross",money(T.revenue),"money",T.unpriced?T.unpriced+" sale(s) not yet priced":"all sales priced",true],["Clients",T.clients,"","couples count as 2"],["Products",T.products,"","incl. ancillary"]]
+ $("kpis").innerHTML=[["Agency gross",money(T.revenue),"money",T.unpriced?T.unpriced+" sale(s) not yet priced":"all sales priced",true],["Clients",T.clients,"","couples count as 2"],["Products",T.products,"","incl. ancillary"],["Cross-sell",xsP(XS(null,period)),"xs",xsD(XS(null,period))]]
   .map(([l,v,c,cap,m])=>`<div class="card kpi ${m?"main":""}"><div class="l">${l}</div><div class="v num ${c}">${v}</div><div class="c">${esc(cap)} · ${LAB[period]}</div></div>`).join("");
  $("lbh").textContent="Leaderboard · "+LAB[period];
  const ranked=[...D.reps].sort((a,b)=>(D.byRep[b][period].clients-D.byRep[a][period].clients)||(D.byRep[b][period].revenue-D.byRep[a][period].revenue));
@@ -114,8 +118,8 @@ function render(){ if(!D) return; tabs();
     :`<div class="goal"><div class="row"><span>Weekly goal: none set</span><b class="num">${money(wk.revenue)} this week</b></div></div>`;
   return `<div class="rep"><div class="medal" style="background:${rank<=3?MEDAL[rank-1]:"#CBD5E1"}">${rank}</div>
    <div><div class="name">${esc(r)}</div><div class="chips">${st&&st.current?`<span class="chip f">🔥 ${st.current}-day streak</span>`:""}${chips.replace(/<span class="chip f">🔥 On a streak<\/span>/,"")}</div></div>
-   <div class="big"><div class="v num">${a.clients}</div><div class="s">clients · <b class="money">${money(a.revenue)}</b></div></div>
-   <div class="periods">${PER.map(p=>{const x=D.byRep[r][p];return `<div class="p ${p===period?"on":""}"><div class="t">${SHORT[p]}</div><div class="c num">${x.clients}</div><div class="r num">${money(x.revenue)}</div></div>`}).join("")}</div>${goal}</div>`;}).join("");
+   <div class="big"><div class="v num">${a.clients}</div><div class="s">clients · <b class="money">${money(a.revenue)}</b></div><div class="xs num">Cross-sell ${(()=>{const x=XS(r,period);return x&&x.clients?x.pct+"% ("+x.multi+" of "+x.clients+")":"—"})()}</div></div>
+   <div class="periods">${PER.map(p=>{const x=D.byRep[r][p];return `<div class="p ${p===period?"on":""}"><div class="t">${SHORT[p]}</div><div class="c num">${x.clients}</div><div class="r num">${money(x.revenue)}</div><div class="x num">${xsP(XS(r,p))} x-sell</div></div>`}).join("")}</div>${goal}</div>`;}).join("");
  const mx=T.mix, tot=Math.max(1,...Object.values(mx));
  $("mixh").textContent="Product mix · "+LAB[period];
  $("mix").innerHTML=Object.entries(mx).map(([k,v])=>`<div class="m"><span>${esc(k)}</span><div class="bar"><i style="width:${v/tot*100}%"></i></div><b class="num">${v}</b></div>`).join("");
