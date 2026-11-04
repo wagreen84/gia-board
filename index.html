@@ -28,6 +28,7 @@ h2{margin:0 0 8px;font-size:19px;color:var(--ink2);text-transform:uppercase;lett
 .kpi.main{border:2px solid var(--blue)}
 .kpi .v.xs,.big .xs,.periods .x{color:var(--blue)}.big .xs{font-size:22px;font-weight:800;margin-top:4px}.periods .x{font-size:13px;font-weight:700}
 .money{color:var(--green)}
+.pipe{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin:6px 0;border-radius:12px;background:#F1F5F9;font-size:18px;font-weight:600}.pipe b{font-size:26px;font-weight:800}.pipe.ok{background:#DCFCE7;color:#166534;border:2px solid var(--green)}.pnote{font-size:14px;color:var(--ink2);margin-top:6px}
 .rep{display:grid;grid-template-columns:64px 1fr auto;gap:4px 18px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .rep:first-of-type{border-top:0}
 .medal{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:800;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
@@ -84,6 +85,7 @@ footer{padding:0 28px 10px;color:var(--ink3);font-size:13px}
     <div class="card"><h2 id="lbh">Leaderboard</h2><div id="lb"></div></div>
   </section>
   <aside class="side">
+    <div class="card"><h2>Pipeline this week · new / closed</h2><div id="pipe"></div></div>
     <div class="card mix"><h2 id="mixh">Product mix</h2><div id="mix"></div><ul class="carriers" id="car"></ul></div>
     <div class="card"><h2>Recent wins</h2><ul class="feed" id="feed"></ul></div>
     <div class="card"><h2>Streaks &amp; badges</h2><div class="badges" id="badges"></div></div>
@@ -91,7 +93,7 @@ footer{padding:0 28px 10px;color:var(--ink3);font-size:13px}
 </main>
 <footer id="foot"></footer>
 <script>
-const PER=["today","week","october","aep"], LAB={today:"Today",week:"This week",october:"October",aep:"AEP (since Oct 15)"}, SHORT={today:"Today",week:"Week",october:"Oct",aep:"AEP"};
+const PER=["today","week","month","lastMonth","aep"]; let LAB={today:"Today",week:"This week",month:"This month so far",lastMonth:"Last month",aep:"AEP (since Oct 15)"}, SHORT={today:"Today",week:"Week",month:"Month",lastMonth:"Last mo",aep:"AEP"};
 const MEDAL=["var(--gold)","var(--silver)","var(--bronze)"];
 const EMO={"Goal crusher":"🎯","On a streak":"🔥"};
 let D=null, period="week", manual=false;
@@ -104,7 +106,7 @@ function tabs(){ $("tabs").innerHTML=PER.map(p=>`<button class="${p===period?"on
 function XS(r,p){const c=D.crossSell;if(!c)return null;return r===null?c.team[p]:(c.byRep[r]?c.byRep[r][p]:null);}
 function xsP(x){return x&&x.pct!==null?x.pct+"%":"—";}
 function xsD(x){return x&&x.clients?x.multi+" of "+x.clients+" clients 2+ products":"no clients yet";}
-function render(){ if(!D) return; tabs();
+function render(){ if(!D) return; if(D.periodLabels){LAB.month=D.periodLabels.month;LAB.lastMonth=D.periodLabels.lastMonth+" (final)";SHORT.month=D.periodLabels.monthShort;SHORT.lastMonth=D.periodLabels.lastMonthShort;} tabs();
  const T=D.team[period];
  $("sub").innerHTML="Updated "+esc(D.updated)+(staleH()>3?`<span class="stale">data may be stale</span>`:"");
  $("kpis").innerHTML=[["Agency gross",money(T.revenue),"money",T.unpriced?T.unpriced+" sale(s) not yet priced":"all sales priced",true],["Clients",T.clients,"","couples count as 2"],["Products",T.products,"","incl. ancillary"],["Cross-sell",xsP(XS(null,period)),"xs",xsD(XS(null,period))]]
@@ -126,6 +128,7 @@ function render(){ if(!D) return; tabs();
  $("car").innerHTML=(D.carriers[period]||[]).slice(0,8).map(([c,n],i)=>`<li><span>${i+1}. ${esc(c)}</span><b class="num">${n}</b></li>`).join("")||"<li><span>No sales yet</span></li>";
  $("feed").innerHTML=D.feed.slice(0,7).map(f=>`<li><span><span class="w">${esc(f.rep)}</span> · ${esc(f.carrier)} ${esc(f.bucket)}${f.sub?" "+esc(f.sub):""}</span><span class="t">${when(f.ts)}</span></li>`).join("")||"<li>No wins yet</li>";
  $("badges").innerHTML=D.badges.map(b=>`<div class="badge"><span class="e">${EMO[b.badge]||"⭐"}</span><div><b>${esc(b.reps.join(" & "))} · ${esc(b.badge)}</b><span>${esc(b.detail)}</span></div></div>`).join("");
+ $("pipe").innerHTML=(D.ghl&&D.ghl.ok)?D.reps.map(r=>{const p=D.ghl.pipeline[r]||{new:0,closed:0,won:0,lost:0};const ok=p.new>=p.closed;return `<div class="pipe ${ok?"ok":""}"><span>${esc(r)}</span><b class="num">new ${p.new} / closed ${p.closed}</b></div>`}).join("")+`<div class="pnote">Referral asks: no data in GG Pro</div>`:"<div class=\"pnote\">Pipeline data unavailable</div>";
  $("foot").textContent="Agency gross = estimated first-year commission from posted sales. Last sale posted "+(D.lastSaleTs?when(D.lastSaleTs):"—")+". Refreshes every 5 minutes.";
 }
 function staleH(){const [d,t]=D.asOf.split(" ");const ny=new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"}));return (ny-new Date(d+"T"+t))/36e5;}
