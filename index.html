@@ -15,8 +15,11 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sa
 header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 28px;background:linear-gradient(90deg,var(--navy),var(--blue));color:#fff}
 header h1{margin:0;font-size:30px;letter-spacing:-.01em}
 header .sub{font-size:15px;opacity:.85}
-.tabs{display:flex;gap:6px;background:rgba(255,255,255,.15);padding:4px;border-radius:999px}
-.tabs button{border:0;background:transparent;color:#fff;font:600 15px inherit;font-family:inherit;padding:8px 16px;border-radius:999px;cursor:pointer}
+.tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:rgba(255,255,255,.15);padding:4px;border-radius:18px;max-width:100%}
+.yearlab{display:flex;align-items:center;gap:6px;color:#fff;font-weight:600;font-size:14px;padding:0 8px}
+.yearlab select{border:0;background:rgba(255,255,255,.18);color:#fff;font:600 15px inherit;padding:8px 10px;border-radius:999px}
+.yearlab select option{color:var(--navy);background:#fff}
+.tabs button{border:0;background:transparent;color:#fff;font:600 15px inherit;font-family:inherit;padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .tabs button.on{background:#fff;color:var(--navy)}
 main{padding:16px 28px;display:grid;grid-template-columns:1.55fr 1fr;gap:22px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 20px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
@@ -40,7 +43,7 @@ h2{margin:0 0 8px;font-size:19px;color:var(--ink2);text-transform:uppercase;lett
 .big{text-align:right}
 .big .v{font-size:58px;font-weight:800;line-height:1}
 .big .s{font-size:14px;color:var(--ink3)}
-.periods{grid-column:2/4;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}
+.periods{grid-column:2/4;display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin-top:4px}
 .p{background:var(--bg);border-radius:12px;padding:5px 10px;border:2px solid transparent}
 .p.on{border-color:var(--blue);background:#EEF4FF}
 .p .t{font-size:12px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
@@ -68,9 +71,10 @@ h2{margin:0 0 8px;font-size:19px;color:var(--ink2);text-transform:uppercase;lett
 .badge b{display:block;font-size:16px}
 .badge span{color:var(--ink2)}
 footer{padding:0 28px 10px;color:var(--ink3);font-size:13px}
-.stale{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;margin-left:8px}
+.stale{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;margin-left:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:700}
+.empty{padding:12px 0;color:var(--ink2)}
 @media (min-width:1700px){header h1{font-size:38px}.name{font-size:36px}.big .v{font-size:72px}.kpi .v{font-size:56px}}
-@media (max-width:1000px){main{grid-template-columns:1fr;padding:14px}header{flex-wrap:wrap;padding:16px}header h1{font-size:24px}.tabs{width:100%;justify-content:space-between}.tabs button{padding:8px 10px;flex:1}
+@media (max-width:1000px){main{grid-template-columns:1fr;padding:14px}header{flex-wrap:wrap;padding:16px}header h1{font-size:24px}.tabs{width:100%;justify-content:flex-start}.yearlab{flex:1 1 100%;padding:4px 8px 6px}.tabs button{padding:8px 8px;flex:1 1 calc(33% - 6px);font-size:13px}
  .kpi .v{font-size:22px}.kpi .c{display:none}.kpis{gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}.kpis .card{padding:10px 12px}.kpi .l{font-size:11px}.badges{grid-template-columns:1fr}.rep{grid-template-columns:48px 1fr;gap:12px}.medal{width:44px;height:44px;font-size:20px}.name{font-size:24px}.big{grid-column:1/3;text-align:left}.big .v{font-size:42px}.periods,.goal{grid-column:1/3}.periods{grid-template-columns:repeat(2,1fr)}.carriers{grid-template-columns:1fr}}
 </style>
 </head>
@@ -85,56 +89,102 @@ footer{padding:0 28px 10px;color:var(--ink3);font-size:13px}
     <div class="card"><h2 id="lbh">Leaderboard</h2><div id="lb"></div></div>
   </section>
   <aside class="side">
-    <div class="card"><h2>Pipeline this week · new / closed</h2><div id="pipe"></div></div>
+    <div class="card"><h2 id="pipeh">Pipeline</h2><div id="pipe"></div></div>
     <div class="card mix"><h2 id="mixh">Product mix</h2><div id="mix"></div><ul class="carriers" id="car"></ul></div>
     <div class="card"><h2>Recent wins</h2><ul class="feed" id="feed"></ul></div>
     <div class="card"><h2>Streaks &amp; badges</h2><div class="badges" id="badges"></div></div>
   </aside>
 </main>
 <footer id="foot"></footer>
+<script src="periods.js"></script>
 <script>
-const PER=["today","week","month","lastMonth","aep"]; let LAB={today:"Today",week:"This week",month:"This month so far",lastMonth:"Last month",aep:"AEP (since Oct 15)"}, SHORT={today:"Today",week:"Week",month:"Month",lastMonth:"Last mo",aep:"AEP"};
+let D=null, period=null, year=null, manual=false;
 const MEDAL=["var(--gold)","var(--silver)","var(--bronze)"];
 const EMO={"Goal crusher":"🎯","On a streak":"🔥"};
-let D=null, period="week", manual=false;
 const $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=n=>"$"+Math.round(n||0).toLocaleString("en-US");
 function when(ts){const [d,t]=ts.split(" ");const [y,m,dd]=d.split("-").map(Number);let [h,mi]=t.split(":").map(Number);const ap=h>=12?"PM":"AM";h=h%12||12;
  return new Date(y,m-1,dd).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · "+h+":"+String(mi).padStart(2,"0")+" "+ap+" ET";}
-function tabs(){ $("tabs").innerHTML=PER.map(p=>`<button class="${p===period?"on":""}" data-p="${p}">${SHORT[p]}</button>`).join("");
- $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{manual=true;period=b.dataset.p;render();}); }
-function XS(r,p){const c=D.crossSell;if(!c)return null;return r===null?c.team[p]:(c.byRep[r]?c.byRep[r][p]:null);}
-function xsP(x){return x&&x.pct!==null?x.pct+"%":"—";}
-function xsD(x){return x&&x.clients?x.multi+" of "+x.clients+" clients 2+ products":"no clients yet";}
-function render(){ if(!D) return; if(D.periodLabels){LAB.month=D.periodLabels.month;LAB.lastMonth=D.periodLabels.lastMonth+" (final)";SHORT.month=D.periodLabels.monthShort;SHORT.lastMonth=D.periodLabels.lastMonthShort;} tabs();
- const T=D.team[period];
- $("sub").innerHTML="Updated "+esc(D.updated)+(staleH()>3?`<span class="stale">data may be stale</span>`:"");
- $("kpis").innerHTML=[["Agency gross",money(T.revenue),"money",T.unpriced?T.unpriced+" sale(s) not yet priced":"all sales priced",true],["Clients",T.clients,"","couples count as 2"],["Products",T.products,"","incl. ancillary"],["Cross-sell",xsP(XS(null,period)),"xs",xsD(XS(null,period))]]
-  .map(([l,v,c,cap,m])=>`<div class="card kpi ${m?"main":""}"><div class="l">${l}</div><div class="v num ${c}">${v}</div><div class="c">${esc(cap)} · ${LAB[period]}</div></div>`).join("");
- $("lbh").textContent="Leaderboard · "+LAB[period];
- const ranked=[...D.reps].sort((a,b)=>(D.byRep[b][period].clients-D.byRep[a][period].clients)||(D.byRep[b][period].revenue-D.byRep[a][period].revenue));
- let rank=0,prev=null; $("lb").innerHTML=ranked.map((r,i)=>{const a=D.byRep[r][period];const key=a.clients+"|"+a.revenue;if(key!==prev){rank=i+1;prev=key;}
-  const chips=[...new Set(D.badges.filter(b=>b.reps.includes(r)).map(b=>b.badge.replace(/ \(.*\)/,"")))].map(c=>`<span class="chip ${c==="Goal crusher"?"g":c==="On a streak"?"f":""}">${EMO[c]||"⭐"} ${esc(c)}</span>`).join("");
-  const st=D.streaks[r]; const g=D.goals[r]; const wk=D.byRep[r].week;
-  const goal=g?(()=>{const pct=Math.round(wk.revenue/g*100);return `<div class="goal"><div class="row"><span>Weekly goal ${money(g)}</span><b class="num" style="color:${pct>=100?"var(--green)":"var(--ink)"}">${money(wk.revenue)} · ${pct}%${pct>=100?" ✓":""}</b></div><div class="bar"><i class="${pct>=100?"hit":""}" style="width:${Math.min(100,pct)}%"></i></div></div>`})()
-    :`<div class="goal"><div class="row"><span>Weekly goal: none set</span><b class="num">${money(wk.revenue)} this week</b></div></div>`;
-  return `<div class="rep"><div class="medal" style="background:${rank<=3?MEDAL[rank-1]:"#CBD5E1"}">${rank}</div>
-   <div><div class="name">${esc(r)}</div><div class="chips">${st&&st.current?`<span class="chip f">🔥 ${st.current}-day streak</span>`:""}${chips.replace(/<span class="chip f">🔥 On a streak<\/span>/,"")}</div></div>
-   <div class="big"><div class="v num">${a.clients}</div><div class="s">clients · <b class="money">${money(a.revenue)}</b></div><div class="xs num">Cross-sell ${(()=>{const x=XS(r,period);return x&&x.clients?x.pct+"% ("+x.multi+" of "+x.clients+")":"—"})()}</div></div>
-   <div class="periods">${PER.map(p=>{const x=D.byRep[r][p];return `<div class="p ${p===period?"on":""}"><div class="t">${SHORT[p]}</div><div class="c num">${x.clients}</div><div class="r num">${money(x.revenue)}</div><div class="x num">${xsP(XS(r,p))} x-sell</div></div>`}).join("")}</div>${goal}</div>`;}).join("");
- const mx=T.mix, tot=Math.max(1,...Object.values(mx));
- $("mixh").textContent="Product mix · "+LAB[period];
- $("mix").innerHTML=Object.entries(mx).map(([k,v])=>`<div class="m"><span>${esc(k)}</span><div class="bar"><i style="width:${v/tot*100}%"></i></div><b class="num">${v}</b></div>`).join("");
- $("car").innerHTML=(D.carriers[period]||[]).slice(0,8).map(([c,n],i)=>`<li><span>${i+1}. ${esc(c)}</span><b class="num">${n}</b></li>`).join("")||"<li><span>No sales yet</span></li>";
- $("feed").innerHTML=D.feed.slice(0,7).map(f=>`<li><span><span class="w">${esc(f.rep)}</span> · ${esc(f.carrier)} ${esc(f.bucket)}${f.sub?" "+esc(f.sub):""}</span><span class="t">${when(f.ts)}</span></li>`).join("")||"<li>No wins yet</li>";
- $("badges").innerHTML=D.badges.map(b=>`<div class="badge"><span class="e">${EMO[b.badge]||"⭐"}</span><div><b>${esc(b.reps.join(" & "))} · ${esc(b.badge)}</b><span>${esc(b.detail)}</span></div></div>`).join("");
- $("pipe").innerHTML=(D.ghl&&D.ghl.ok)?D.reps.map(r=>{const p=D.ghl.pipeline[r]||{new:0,closed:0,won:0,lost:0};const ok=p.new>=p.closed;return `<div class="pipe ${ok?"ok":""}"><span>${esc(r)}</span><b class="num">new ${p.new} / closed ${p.closed}</b></div>`}).join("")+`<div class="pnote">Referral asks: no data in GG Pro</div>`:"<div class=\"pnote\">Pipeline data unavailable</div>";
- $("foot").textContent="Agency gross = estimated first-year commission from posted sales. Last sale posted "+(D.lastSaleTs?when(D.lastSaleTs):"—")+". Refreshes every 5 minutes.";
+function view(){
+ const ys=GIAPeriods.years(D);
+ if(year==null||ys.indexOf(year)<0) year=GIAPeriods.defaultYear(D);
+ const items=GIAPeriods.menu(D, year);
+ if(!items.some(p=>p.key===period)) period=GIAPeriods.defaultPeriod(items);
+ return {ys, items};
 }
-function staleH(){const [d,t]=D.asOf.split(" ");const ny=new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"}));return (ny-new Date(d+"T"+t))/36e5;}
+function tabs(ys, items){
+ const host=$("tabs");
+ const sig=ys.join(",")+"|"+items.map(p=>p.key+":"+p.short).join(",");
+ if(host.dataset.sig!==sig){
+  host.dataset.sig=sig;
+  host.innerHTML=`<label class="yearlab">Year <select id="year" aria-label="Year">${ys.map(y=>`<option value="${y}">${y}</option>`).join("")}</select></label>`
+   +items.map(p=>`<button type="button" data-p="${esc(p.key)}" title="${esc(p.label)}">${esc(p.short)}</button>`).join("");
+  const sel=host.querySelector("#year");
+  if(sel) sel.onchange=e=>{manual=true;year=+e.target.value;period=null;render();};
+  host.querySelectorAll("button").forEach(b=>b.onclick=()=>{manual=true;period=b.dataset.p;render();});
+ }
+ const sel=host.querySelector("#year");
+ if(sel) sel.value=String(year);
+ host.querySelectorAll("button").forEach(b=>{const on=b.dataset.p===period;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on?"true":"false");});
+}
+function XS(r,p){const c=D.crossSell;if(!c)return null;const row=r===null?c.team:(c.byRep[r]||{});return row?row[p]||null:null;}
+function xsP(x){return x&&x.pct!==null&&x.pct!==undefined?x.pct+"%":"—";}
+function xsD(x){return x&&x.clients?x.multi+" of "+x.clients+" clients 2+ products":"no clients yet";}
+function repAgg(r,key){return D.byRep[r]&&D.byRep[r][key]||null;}
+function render(){ if(!D||!window.GIAPeriods) return;
+ const {ys, items}=view();
+ const cur=items.find(p=>p.key===period)||null;
+ document.body.dataset.period=period||"";
+ document.body.dataset.year=year==null?"":String(year);
+ tabs(ys, items);
+ const T=cur&&D.team[cur.key];
+ $("sub").innerHTML="Updated "+esc(D.updated)+(staleH()>3?`<span class="stale">data may be stale</span>`:"");
+ if(!cur||!T){
+  $("kpis").innerHTML=""; $("lb").innerHTML='<div class="empty">No sales periods in this feed.</div>';
+  $("lbh").textContent="Leaderboard"; $("mix").innerHTML=""; $("car").innerHTML="";
+ } else {
+  const lab=cur.label;
+  $("kpis").innerHTML=[["Agency gross",money(T.revenue),"money",T.unpriced?T.unpriced+" sale(s) not yet priced":"all sales priced",true,"revenue"],["Clients",T.clients,"","couples count as 2",false,"clients"],["Products",T.products,"","incl. ancillary",false,"products"],["Cross-sell",xsP(XS(null,period)),"xs",xsD(XS(null,period)),false,"cross"]]
+   .map(([l,v,c,cap,m,k])=>`<div class="card kpi ${m?"main":""}" data-k="${k}"><div class="l">${l}</div><div class="v num ${c}">${typeof v==="number"?v:v}</div><div class="c">${esc(cap)} · ${esc(lab)}</div></div>`).join("");
+  $("lbh").textContent="Leaderboard · "+lab;
+  const ranked=[...D.reps].sort((a,b)=>{const A=repAgg(a,period),B=repAgg(b,period);const ac=A?A.clients:-1,bc=B?B.clients:-1;return (bc-ac)||((B?B.revenue:0)-(A?A.revenue:0));});
+  let rank=0,prev=null;
+  $("lb").innerHTML=ranked.map((r,i)=>{const a=repAgg(r,period)||{clients:"—",revenue:null};const key=(a.clients??"—")+"|"+(a.revenue??"—");if(key!==prev){rank=i+1;prev=key;}
+   const chips=[...new Set(D.badges.filter(b=>b.reps.includes(r)).map(b=>b.badge.replace(/ \(.*\)/,"")))].map(c=>`<span class="chip ${c==="Goal crusher"?"g":c==="On a streak"?"f":""}">${EMO[c]||"⭐"} ${esc(c)}</span>`).join("");
+   const st=D.streaks[r]; const g=D.goals[r]; const wk=D.byRep[r]&&D.byRep[r].week;
+   const goal=g&&wk?(()=>{const pct=Math.round(wk.revenue/g*100);return `<div class="goal"><div class="row"><span>Weekly goal ${money(g)}</span><b class="num" style="color:${pct>=100?"var(--green)":"var(--ink)"}">${money(wk.revenue)} · ${pct}%${pct>=100?" ✓":""}</b></div><div class="bar"><i class="${pct>=100?"hit":""}" style="width:${Math.min(100,pct)}%"></i></div></div>`})()
+    :`<div class="goal"><div class="row"><span>Weekly goal${g?"":": none set"}</span><b class="num">${wk?money(wk.revenue)+" this week":"—"}</b></div></div>`;
+   const cells=items.map(p=>{const x=repAgg(r,p.key);const on=p.key===period;return `<div class="p ${on?"on":""}" data-p="${esc(p.key)}"><div class="t">${esc(p.short)}</div><div class="c num">${x?x.clients:"—"}</div><div class="r num">${x?money(x.revenue):"—"}</div><div class="x num">${xsP(XS(r,p.key))} x-sell</div></div>`;}).join("");
+   const xs=XS(r,period);
+   return `<div class="rep"><div class="medal" style="background:${rank<=3?MEDAL[rank-1]:"#CBD5E1"}">${rank}</div>
+    <div><div class="name">${esc(r)}</div><div class="chips">${st&&st.current?`<span class="chip f">🔥 ${st.current}-day streak</span>`:""}${chips.replace(/<span class="chip f">🔥 On a streak<\/span>/,"")}</div></div>
+    <div class="big"><div class="v num">${a.clients}</div><div class="s">clients · <b class="money">${a.revenue==null?"—":money(a.revenue)}</b></div><div class="xs num">Cross-sell ${xs&&xs.clients?xs.pct+"% ("+xs.multi+" of "+xs.clients+")":"—"}</div></div>
+    <div class="periods">${cells}</div>${goal}</div>`;}).join("");
+  const mx=T.mix||{}, tot=Math.max(1,...Object.values(mx));
+  $("mixh").textContent="Product mix · "+lab;
+  $("mix").innerHTML=Object.entries(mx).map(([k,v])=>`<div class="m"><span>${esc(k)}</span><div class="bar"><i style="width:${v/tot*100}%"></i></div><b class="num">${v}</b></div>`).join("");
+  $("car").innerHTML=(D.carriers[period]||[]).slice(0,8).map(([c,n],i)=>`<li><span>${i+1}. ${esc(c)}</span><b class="num">${n}</b></li>`).join("")||"<li><span>No sales yet</span></li>";
+ }
+ $("feed").innerHTML=(D.feed||[]).slice(0,7).map(f=>`<li><span><span class="w">${esc(f.rep)}</span> · ${esc(f.carrier)} ${esc(f.bucket)}${f.sub?" "+esc(f.sub):""}</span><span class="t">${when(f.ts)}</span></li>`).join("")||"<li>No wins yet</li>";
+ $("badges").innerHTML=(D.badges||[]).map(b=>`<div class="badge"><span class="e">${EMO[b.badge]||"⭐"}</span><div><b>${esc(b.reps.join(" & "))} · ${esc(b.badge)}</b><span>${esc(b.detail)}</span></div></div>`).join("");
+ const g=D.ghl, stale=!g||g.stale!==false;
+ $("pipeh").innerHTML=g&&g.ok?(stale?`Pipeline <span class="stale">not refreshed</span>`:`Pipeline this week · new / closed`):"Pipeline";
+ if(!(g&&g.ok&&g.pipeline)) $("pipe").innerHTML='<div class="pnote">Pipeline data unavailable</div>';
+ else {
+  const snap=g.asOf?` Last snapshot ${esc(g.asOf)} ET. `:" ";
+  const note=stale?esc(g.note||"Stale snapshot. Pipeline reads from GG Pro are off."):"";
+  $("pipe").innerHTML=D.reps.map(r=>{const p=g.pipeline[r]||{new:0,closed:0,won:0,lost:0};const ok=p.new>=p.closed;return `<div class="pipe ${ok?"ok":""}"><span>${esc(r)}</span><b class="num">new ${p.new} / closed ${p.closed}</b></div>`;}).join("")
+   +`<div class="pnote">${note}${snap}Referral asks: no data.</div>`;
+ }
+ const since=(D.history&&D.history.since)||"2026-10-01";
+ const arch=D.archive&&D.archive.status==="connected"?" Year-over-year totals include the Google Sheets archive.":" Year-over-year archive (Google Sheets) is not connected on this board.";
+ $("foot").textContent="Agency gross = estimated first-year commission from posted sales. Last sale posted "+(D.lastSaleTs?when(D.lastSaleTs):"—")+". Refreshes every 5 minutes. Sales history in this feed starts "+since+". Earlier months are not shown."+arch;
+}
+function staleH(){if(!D||!D.asOf)return 0;const [d,t]=D.asOf.split(" ");const ny=new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"}));return (ny-new Date(d+"T"+t))/36e5;}
 async function load(){ try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"}); if(r.ok){D=await r.json();render();}}catch(e){} }
 load(); setInterval(load,5*60*1000);
-setInterval(()=>{ if(manual) return; period=PER[(PER.indexOf(period)+1)%PER.length]; render(); },20000);
+setInterval(()=>{ if(manual||!D||!window.GIAPeriods) return; const items=GIAPeriods.menu(D, year==null?GIAPeriods.defaultYear(D):year); if(!items.length) return;
+ const i=Math.max(0, items.findIndex(p=>p.key===period)); period=items[(i+1)%items.length].key; render(); },20000);
 </script>
 </body>
 </html>
