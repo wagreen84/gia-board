@@ -31,7 +31,7 @@ h2{margin:0 0 8px;font-size:19px;color:var(--ink2);text-transform:uppercase;lett
 .kpi.main{border:2px solid var(--blue)}
 .kpi .v.xs,.big .xs,.periods .x{color:var(--blue)}.big .xs{font-size:22px;font-weight:800;margin-top:4px}.periods .x{font-size:13px;font-weight:700}
 .money{color:var(--green)}
-.pipe{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin:6px 0;border-radius:12px;background:#F1F5F9;font-size:18px;font-weight:600}.pipe b{font-size:26px;font-weight:800}.pipe.ok{background:#DCFCE7;color:#166534;border:2px solid var(--green)}.pnote{font-size:14px;color:var(--ink2);margin-top:6px}
+.pipe{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin:6px 0;border-radius:12px;background:#F1F5F9;font-size:18px;font-weight:600}.pipe b{font-size:26px;font-weight:800}.pipe.ok{background:#DCFCE7;color:#166534;border:2px solid var(--green)}.pipe.warn{background:#FEF3C7;color:#92400E;border:2px solid #F59E0B}.pipe .meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.pipe .sub{font-size:13px;font-weight:600;opacity:.9}.pnote{font-size:14px;color:var(--ink2);margin-top:6px}
 .rep{display:grid;grid-template-columns:64px 1fr auto;gap:4px 18px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .rep:first-of-type{border-top:0}
 .medal{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:800;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
@@ -90,6 +90,8 @@ footer{padding:0 28px 10px;color:var(--ink3);font-size:13px}
   </section>
   <aside class="side">
     <div class="card"><h2 id="pipeh">Pipeline</h2><div id="pipe"></div></div>
+    <div class="card"><h2 id="rule30h">30-Day Rule</h2><div id="rule30"></div></div>
+    <div class="card"><h2 id="replaceh">Law of Replacement</h2><div id="replace"></div></div>
     <div class="card mix"><h2 id="mixh">Product mix</h2><div id="mix"></div><ul class="carriers" id="car"></ul></div>
     <div class="card"><h2>Recent wins</h2><ul class="feed" id="feed"></ul></div>
     <div class="card"><h2>Streaks &amp; badges</h2><div class="badges" id="badges"></div></div>
@@ -175,6 +177,27 @@ function render(){ if(!D||!window.GIAPeriods) return;
   const note=stale?esc(g.note||"Stale snapshot. Pipeline reads from GG Pro are off."):"";
   $("pipe").innerHTML=D.reps.map(r=>{const p=g.pipeline[r]||{new:0,closed:0,won:0,lost:0};const ok=p.new>=p.closed;return `<div class="pipe ${ok?"ok":""}"><span>${esc(r)}</span><b class="num">new ${p.new} / closed ${p.closed}</b></div>`;}).join("")
    +`<div class="pnote">${note}${snap}Referral asks: no data.</div>`;
+ }
+ const n=v=>v==null?"no data":String(v);
+ const P=D.ghlPanels;
+ if(!(P&&P.ok)){
+  $("rule30").innerHTML='<div class="pnote">no data</div>';
+  $("replace").innerHTML='<div class="pnote">no data</div>';
+ } else {
+  const cur=(P.windows&&P.windows.current&&P.windows.current.label)||"Last 30 days";
+  const prior=(P.windows&&P.windows.prior&&P.windows.prior.label)||"Prior 30 days";
+  $("rule30h").innerHTML="30-Day Rule";
+  $("rule30").innerHTML=D.reps.map(r=>{
+    const row=(P.rule30&&P.rule30[r])||{appointments:{},opportunities:{}};
+    const a=row.appointments||{}, o=row.opportunities||{};
+    const warn=!!(a.flag||o.flag);
+    return `<div class="pipe ${warn?"warn":"ok"}"><span>${esc(r)}${warn?'<span class="sub">pipeline-gap warning</span>':""}</span><span class="meta"><b class="num">appts ${n(a.current)} / ${n(a.prior)}</b><span class="sub">opps ${n(o.current)} / ${n(o.prior)}</span></span></div>`;
+  }).join("")+`<div class="pnote">${esc(cur)} vs ${esc(prior)}. New appointments and opportunities vs the prior 30 days. A drop is a pipeline-gap warning, not a quota.${P.asOf?" Pulled "+esc(P.asOf)+" ET.":""}</div>`;
+  $("replace").innerHTML=D.reps.map(r=>{
+    const row=(P.replacement&&P.replacement[r])||{};
+    const warn=!!row.flag;
+    return `<div class="pipe ${warn?"warn":"ok"}"><span>${esc(r)}${warn?'<span class="sub">new below closed</span>':""}</span><b class="num">new ${n(row.newOpps)} / closed ${n(row.closed)}</b></div>`;
+  }).join("")+`<div class="pnote">Same 30-day window. New opportunities vs won + lost. Flag when new is below closed.${P.asOf?" Pulled "+esc(P.asOf)+" ET.":""}</div>`;
  }
  const since=(D.history&&D.history.since)||"2026-10-01";
  const arch=D.archive&&D.archive.status==="connected"?" Year-over-year totals include the Google Sheets archive.":" Year-over-year archive (Google Sheets) is not connected on this board.";
