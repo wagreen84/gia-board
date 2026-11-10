@@ -50,8 +50,9 @@ h2{margin:0 0 8px;font-size:19px;color:var(--ink2);text-transform:uppercase;lett
 .p .c{font-size:22px;font-weight:700}
 .p .r{font-size:15px;font-weight:700;color:var(--green)}
 .goal{grid-column:2/4;margin-top:6px}
-.goal .row{display:flex;justify-content:space-between;font-size:14px;color:var(--ink2);margin-bottom:5px}
-.bar{height:16px;background:#E5EAF2;border-radius:999px;overflow:hidden}
+.goal .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:18px;color:var(--ink2);margin-bottom:5px}
+.goal .row b{font-size:24px;font-weight:800}
+.bar{height:20px;background:#E5EAF2;border-radius:999px;overflow:hidden}
 .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:999px}
 .bar>i.hit{background:linear-gradient(90deg,#22C55E,var(--green))}
 .side{display:flex;flex-direction:column;gap:16px}
@@ -105,6 +106,27 @@ const MEDAL=["var(--gold)","var(--silver)","var(--bronze)"];
 const EMO={"Goal crusher":"🎯","On a streak":"🔥"};
 const $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=n=>"$"+Math.round(n||0).toLocaleString("en-US");
+function parseYMD(s){if(!s)return null;const[y,m,d]=String(s).slice(0,10).split("-").map(Number);if(!y||!m||!d)return null;return Date.UTC(y,m-1,d);}
+function inclusiveDays(a,b){const A=parseYMD(a),B=parseYMD(b);if(A==null||B==null||B<A)return 0;return Math.round((B-A)/86400000)+1;}
+function fmtWeeks(days){const w=Math.round(days/7*10)/10;const t=Number.isInteger(w)?String(w):w.toFixed(1);return t+" "+(w===1?"wk":"wks");}
+function periodGoal(weekly,p,asOf){
+ if(!weekly||!p) return null;
+ if(p.group==="week"){
+  const lab=String(p.label||"This week").replace(/\s*\(this wk\)\s*$/,"");
+  return {goal:weekly,label:lab+" · goal "+money(weekly)};
+ }
+ let start=p.start,end=p.end;
+ if(!start||!end) return null;
+ const as=(asOf||"").slice(0,10);
+ if(!p.final&&as&&as<String(end).slice(0,10)) end=as;
+ const days=inclusiveDays(start,end);
+ if(days<=0) return null;
+ const goal=Math.round(weekly*days/7);
+ let name=p.label||p.short||"this period";
+ if(p.group==="today"||p.key==="today") name="today";
+ else name=String(name).replace(/\s*\(final\)\s*$/,"");
+ return {goal,label:`Goal for ${name} (${fmtWeeks(days)}) ${money(goal)}`};
+}
 function when(ts){const [d,t]=ts.split(" ");const [y,m,dd]=d.split("-").map(Number);let [h,mi]=t.split(":").map(Number);const ap=h>=12?"PM":"AM";h=h%12||12;
  return new Date(y,m-1,dd).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · "+h+":"+String(mi).padStart(2,"0")+" "+ap+" ET";}
 function view(){
@@ -153,9 +175,14 @@ function render(){ if(!D||!window.GIAPeriods) return;
   let rank=0,prev=null;
   $("lb").innerHTML=ranked.map((r,i)=>{const a=repAgg(r,period)||{clients:"—",revenue:null};const key=(a.clients??"—")+"|"+(a.revenue??"—");if(key!==prev){rank=i+1;prev=key;}
    const chips=[...new Set(D.badges.filter(b=>b.reps.includes(r)).map(b=>b.badge.replace(/ \(.*\)/,"")))].map(c=>`<span class="chip ${c==="Goal crusher"?"g":c==="On a streak"?"f":""}">${EMO[c]||"⭐"} ${esc(c)}</span>`).join("");
-   const st=D.streaks[r]; const g=D.goals[r]; const wk=D.byRep[r]&&D.byRep[r].week;
-   const goal=g&&wk?(()=>{const pct=Math.round(wk.revenue/g*100);return `<div class="goal"><div class="row"><span>Weekly goal ${money(g)}</span><b class="num" style="color:${pct>=100?"var(--green)":"var(--ink)"}">${money(wk.revenue)} · ${pct}%${pct>=100?" ✓":""}</b></div><div class="bar"><i class="${pct>=100?"hit":""}" style="width:${Math.min(100,pct)}%"></i></div></div>`})()
-    :`<div class="goal"><div class="row"><span>Weekly goal${g?"":": none set"}</span><b class="num">${wk?money(wk.revenue)+" this week":"—"}</b></div></div>`;
+   const st=D.streaks[r]; const g=D.goals[r]; const agg=repAgg(r,period);
+   const info=periodGoal(g,cur,D.asOf);
+   const goal=(()=>{
+    if(!agg) return `<div class="goal"><div class="row"><span>No goal for this period</span><b class="num">—</b></div></div>`;
+    if(!g||!info) return `<div class="goal"><div class="row"><span>${g?"No goal for this period":"No goal set"}</span><b class="num">${money(agg.revenue)}</b></div></div>`;
+    const pct=Math.round(agg.revenue/info.goal*100), hit=agg.revenue>=info.goal;
+    return `<div class="goal"><div class="row"><span>${esc(info.label)}</span><b class="num" style="color:${hit?"var(--green)":"var(--ink)"}">${money(agg.revenue)} · ${pct}%${hit?" ✓":""}</b></div><div class="bar"><i class="${hit?"hit":""}" style="width:${Math.min(100,Math.max(0,pct))}%"></i></div></div>`;
+   })();
    const cells=items.map(p=>{const x=repAgg(r,p.key);const on=p.key===period;return `<div class="p ${on?"on":""}" data-p="${esc(p.key)}"><div class="t">${esc(p.short)}</div><div class="c num">${x?x.clients:"—"}</div><div class="r num">${x?money(x.revenue):"—"}</div><div class="x num">${xsP(XS(r,p.key))} x-sell</div></div>`;}).join("");
    const xs=XS(r,period);
    return `<div class="rep"><div class="medal" style="background:${rank<=3?MEDAL[rank-1]:"#CBD5E1"}">${rank}</div>
