@@ -154,6 +154,8 @@ function tabs(ys, items){
 function XS(r,p){const c=D.crossSell;if(!c)return null;const row=r===null?c.team:(c.byRep[r]||{});return row?row[p]||null:null;}
 function xsP(x){return x&&x.pct!==null&&x.pct!==undefined?x.pct+"%":"—";}
 function xsD(x){return x&&x.clients?x.multi+" of "+x.clients+" clients 2+ products":"no clients yet";}
+function repsFor(p){return (D.visibleReps&&D.visibleReps[p])||D.reps;}
+function currentReps(){return repsFor("week");}
 function repAgg(r,key){return D.byRep[r]&&D.byRep[r][key]||null;}
 function render(){ if(!D||!window.GIAPeriods) return;
  const {ys, items}=view();
@@ -171,7 +173,7 @@ function render(){ if(!D||!window.GIAPeriods) return;
   $("kpis").innerHTML=[["Agency gross",money(T.revenue),"money",T.unpriced?T.unpriced+" sale(s) not yet priced":"all sales priced",true,"revenue"],["Clients",T.clients,"","couples count as 2",false,"clients"],["Products",T.products,"","incl. ancillary",false,"products"],["Cross-sell",xsP(XS(null,period)),"xs",xsD(XS(null,period)),false,"cross"]]
    .map(([l,v,c,cap,m,k])=>`<div class="card kpi ${m?"main":""}" data-k="${k}"><div class="l">${l}</div><div class="v num ${c}">${typeof v==="number"?v:v}</div><div class="c">${esc(cap)} · ${esc(lab)}</div></div>`).join("");
   $("lbh").textContent="Leaderboard · "+lab;
-  const ranked=[...D.reps].sort((a,b)=>{const A=repAgg(a,period),B=repAgg(b,period);const ac=A?A.clients:-1,bc=B?B.clients:-1;return (bc-ac)||((B?B.revenue:0)-(A?A.revenue:0));});
+  const ranked=[...repsFor(period)].sort((a,b)=>{const A=repAgg(a,period),B=repAgg(b,period);const ac=A?A.clients:-1,bc=B?B.clients:-1;return (bc-ac)||((B?B.revenue:0)-(A?A.revenue:0));});
   let rank=0,prev=null;
   $("lb").innerHTML=ranked.map((r,i)=>{const a=repAgg(r,period)||{clients:"—",revenue:null};const key=(a.clients??"—")+"|"+(a.revenue??"—");if(key!==prev){rank=i+1;prev=key;}
    const chips=[...new Set(D.badges.filter(b=>b.reps.includes(r)).map(b=>b.badge.replace(/ \(.*\)/,"")))].map(c=>`<span class="chip ${c==="Goal crusher"?"g":c==="On a streak"?"f":""}">${EMO[c]||"⭐"} ${esc(c)}</span>`).join("");
@@ -202,7 +204,7 @@ function render(){ if(!D||!window.GIAPeriods) return;
  else {
   const snap=g.asOf?` Last snapshot ${esc(g.asOf)} ET. `:" ";
   const note=stale?esc(g.note||"Stale snapshot. Pipeline reads from GG Pro are off."):"";
-  $("pipe").innerHTML=D.reps.map(r=>{const p=g.pipeline[r]||{new:0,closed:0,won:0,lost:0};const ok=p.new>=p.closed;return `<div class="pipe ${ok?"ok":""}"><span>${esc(r)}</span><b class="num">new ${p.new} / closed ${p.closed}</b></div>`;}).join("")
+  $("pipe").innerHTML=currentReps().map(r=>{const p=g.pipeline[r]||{new:0,closed:0,won:0,lost:0};const ok=p.new>=p.closed;return `<div class="pipe ${ok?"ok":""}"><span>${esc(r)}</span><b class="num">new ${p.new} / closed ${p.closed}</b></div>`;}).join("")
    +`<div class="pnote">${note}${snap}Referral asks: no data.</div>`;
  }
  const n=v=>v==null?"no data":String(v);
@@ -214,13 +216,13 @@ function render(){ if(!D||!window.GIAPeriods) return;
   const cur=(P.windows&&P.windows.current&&P.windows.current.label)||"Last 30 days";
   const prior=(P.windows&&P.windows.prior&&P.windows.prior.label)||"Prior 30 days";
   $("rule30h").innerHTML="30-Day Rule";
-  $("rule30").innerHTML=D.reps.map(r=>{
+  $("rule30").innerHTML=currentReps().map(r=>{
     const row=(P.rule30&&P.rule30[r])||{appointments:{},opportunities:{}};
     const a=row.appointments||{}, o=row.opportunities||{};
     const warn=!!(a.flag||o.flag);
     return `<div class="pipe ${warn?"warn":"ok"}"><span>${esc(r)}${warn?'<span class="sub">pipeline-gap warning</span>':""}</span><span class="meta"><b class="num">appts ${n(a.current)} / ${n(a.prior)}</b><span class="sub">opps ${n(o.current)} / ${n(o.prior)}</span></span></div>`;
   }).join("")+`<div class="pnote">${esc(cur)} vs ${esc(prior)}. New appointments and opportunities vs the prior 30 days. A drop is a pipeline-gap warning, not a quota.${P.asOf?" Pulled "+esc(P.asOf)+" ET.":""}</div>`;
-  $("replace").innerHTML=D.reps.map(r=>{
+  $("replace").innerHTML=currentReps().map(r=>{
     const row=(P.replacement&&P.replacement[r])||{};
     const warn=!!row.flag;
     return `<div class="pipe ${warn?"warn":"ok"}"><span>${esc(r)}${warn?'<span class="sub">new below closed</span>':""}</span><b class="num">new ${n(row.newOpps)} / closed ${n(row.closed)}</b></div>`;
