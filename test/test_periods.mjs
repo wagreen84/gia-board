@@ -164,3 +164,21 @@ test("a week that crosses the month boundary is not labelled as a clipped slice 
   assert.equal(prior[0].label, "December (final)");
   assert.equal(prior[1].short, "AEP 2026");
 });
+
+test("auto-rotation is current week, current month, and AEP only while AEP is open", () => {
+  function keys(asOf, closed) {
+    const spec = P.buildCatalogSpec(asOf, { closedMonths: closed });
+    return P.rotation(withTeam(spec, asOf + " 12:00")).map((p) => p.key);
+  }
+  assert.deepEqual(keys("2026-11-25", ["2026-10"]), ["w2026-11-23", "month", "aep"]);
+  assert.deepEqual(keys("2026-10-15", []), ["w2026-10-12", "month", "aep"]);
+  assert.deepEqual(keys("2026-12-07", ["2026-10", "2026-11"]), ["w2026-12-07", "month", "aep"]);
+  assert.deepEqual(keys("2026-12-08", ["2026-10", "2026-11"]), ["w2026-12-07", "month"]);
+  assert.deepEqual(keys("2026-10-14", []), ["w2026-10-12", "month"]);
+  const jan = withTeam(P.buildCatalogSpec("2027-01-04", { closedMonths: ["2026-10", "2026-11", "2026-12"] }), "2027-01-04 08:00");
+  assert.deepEqual(P.rotation(jan).map((p) => p.key), ["w2027-01-04", "month"]);
+  const live = JSON.parse(readFileSync(new URL("../data.json", import.meta.url)));
+  assert.deepEqual(P.rotation(live).map((p) => p.key), ["w2026-11-23", "month", "aep"]);
+  assert.ok(!P.rotation(live).some((p) => p.group === "month" && p.key !== "month"));
+  assert.ok(!P.rotation(live).some((p) => p.key === "today" || p.group === "today"));
+});

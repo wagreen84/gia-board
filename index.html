@@ -235,8 +235,8 @@ function render(){ if(!D||!window.GIAPeriods) return;
 function staleH(){if(!D||!D.asOf)return 0;const [d,t]=D.asOf.split(" ");const ny=new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"}));return (ny-new Date(d+"T"+t))/36e5;}
 async function load(){ try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"}); if(r.ok){D=await r.json();render();}}catch(e){} }
 load(); setInterval(load,5*60*1000);
-setInterval(()=>{ if(manual||!D||!window.GIAPeriods) return; const items=GIAPeriods.menu(D, year==null?GIAPeriods.defaultYear(D):year); if(!items.length) return;
- const i=Math.max(0, items.findIndex(p=>p.key===period)); period=items[(i+1)%items.length].key; render(); },20000);
+setInterval(()=>{ if(manual||!D||!window.GIAPeriods) return; const items=GIAPeriods.rotation(D); if(!items.length) return;
+ const i=items.findIndex(p=>p.key===period); period=items[i<0?0:(i+1)%items.length].key; render(); },20000);
 </script>
 </body>
 </html>

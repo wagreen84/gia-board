@@ -298,6 +298,32 @@
     if (aep) return aep.key;
     return items.length ? items[0].key : null;
   }
+  function inAepWindow(data, aep) {
+    var asOf = asOfDate(data);
+    if (!asOf || !aep || !aep.start || !aep.end) return false;
+    return asOf >= aep.start && asOf <= aep.end;
+  }
+  function rotation(data) {
+    /* Auto-rotate only the current week, the current month, and AEP-to-date.
+       AEP is included only while asOf falls in the season window (Oct 15–Dec 7,
+       same bounds build_data.py already emits). Past months, prior weeks,
+       Today, and a closed AEP season are left out of the cycle. */
+    var items = menu(data, defaultYear(data));
+    var out = [];
+    var week = items.filter(function (p) { return p.group === "week" && p.inProgress; })[0];
+    if (!week && data && data.weekStart) {
+      var ws = dateOnly(data.weekStart);
+      week = items.filter(function (p) {
+        return p.group === "week" && (p.key === "week" || p.key === "w" + ws || p.start === ws);
+      })[0];
+    }
+    if (week) out.push(week);
+    var month = items.filter(function (p) { return p.group === "monthToDate" || p.key === "month"; })[0];
+    if (month) out.push(month);
+    var aep = items.filter(function (p) { return p.group === "aep"; })[0];
+    if (aep && inAepWindow(data, aep)) out.push(aep);
+    return out;
+  }
 
   return {
     HISTORY_FLOOR: HISTORY_FLOOR,
@@ -306,6 +332,7 @@
     buildCatalogSpec: buildCatalogSpec,
     legacyCatalog: legacyCatalog,
     menu: menu,
+    rotation: rotation,
     years: years,
     defaultYear: defaultYear,
     defaultPeriod: defaultPeriod,
